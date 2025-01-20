@@ -13,6 +13,7 @@ namespace UniGetUI.PackageEngine.PackageLoader
 {
     public class PackageBundlesLoader : AbstractPackageLoader
     {
+        public bool _hasUnsavedChanges;
         public static PackageBundlesLoader Instance = null!;
 
         public PackageBundlesLoader(IEnumerable<IPackageManager> managers)

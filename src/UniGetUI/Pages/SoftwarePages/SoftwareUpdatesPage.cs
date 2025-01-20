@@ -18,7 +18,8 @@ using UniGetUI.Pages.DialogPages;
 
 namespace UniGetUI.Interface.SoftwarePages
 {
-    public class SoftwareUpdatesPage : AbstractPackagesPage
+    [Microsoft.UI.Xaml.Data.Bindable]
+    public partial class SoftwareUpdatesPage : AbstractPackagesPage
     {
         private BetterMenuItem? MenuAsAdmin;
         private BetterMenuItem? MenuInteractive;
@@ -199,6 +200,11 @@ namespace UniGetUI.Interface.SoftwarePages
             return ContextMenu;
         }
 
+        protected override void HandleNavigationArguments(object? args)
+        {
+            // pass
+        }
+
         protected override void WhenShowingContextMenu(IPackage package)
         {
             if (MenuAsAdmin is null
@@ -297,7 +303,7 @@ namespace UniGetUI.Interface.SoftwarePages
             }
 
             PackageDetails.Click += (_, _) => ShowDetailsForPackage(SelectedItem);
-            HelpButton.Click += (_, _) => MainApp.Instance.MainWindow.NavigationPage.ShowHelp();
+            HelpButton.Click += (_, _) => MainApp.Instance.MainWindow.NavigationPage.NavigateTo(PageType.Help);
             InstallationSettings.Click += (_, _) => ShowInstallationOptionsForPackage(SelectedItem);
             ManageIgnored.Click += async (_, _) => await DialogHelper.ManageIgnoredUpdates();
             IgnoreSelected.Click += async (_, _) =>
@@ -319,127 +325,13 @@ namespace UniGetUI.Interface.SoftwarePages
 
         protected override void WhenPackageCountUpdated()
         {
-            MainApp.Tooltip.AvailableUpdates = Loader.Count();
+            // pass
         }
 
 
         protected override void WhenPackagesLoaded(ReloadReason reason)
         {
-            List<IPackage> upgradablePackages = [];
-            foreach (IPackage package in Loader.Packages)
-                if (package.Tag is not PackageTag.OnQueue and not PackageTag.BeingProcessed)
-                    upgradablePackages.Add(package);
-
-            try
-            {
-                if (upgradablePackages.Count == 0)
-                    return;
-
-                bool EnableAutoUpdate = Settings.Get("AutomaticallyUpdatePackages") ||
-                                   Environment.GetCommandLineArgs().Contains("--updateapps");
-
-                if (EnableAutoUpdate)
-                {
-                    foreach (IPackage package in PEInterface.UpgradablePackagesLoader.Packages)
-                        if (package.Tag is not PackageTag.BeingProcessed and not PackageTag.OnQueue)
-                            MainApp.Operations.Update(package);
-                }
-
-                if (Settings.AreUpdatesNotificationsDisabled())
-                    return;
-
-                AppNotificationManager.Default.RemoveByTagAsync(CoreData.UpdatesAvailableNotificationTag.ToString());
-
-
-                AppNotification notification;
-                if (upgradablePackages.Count == 1)
-                {
-                    if (EnableAutoUpdate)
-                    {
-                        AppNotificationBuilder builder = new AppNotificationBuilder()
-                            .SetScenario(AppNotificationScenario.Default)
-                            .SetTag(CoreData.UpdatesAvailableNotificationTag.ToString())
-
-                            .AddText(CoreTools.Translate("An update was found!"))
-                            .AddText(CoreTools.Translate("{0} is being updated to version {1}",
-                                upgradablePackages[0].Name, upgradablePackages[0].NewVersion))
-                            .SetAttributionText(CoreTools.Translate("You have currently version {0} installed",
-                                upgradablePackages[0].Version))
-
-                            .AddArgument("action", NotificationArguments.ShowOnUpdatesTab);
-                        notification = builder.BuildNotification();
-                    }
-                    else
-                    {
-                        AppNotificationBuilder builder = new AppNotificationBuilder()
-                            .SetScenario(AppNotificationScenario.Default)
-                            .SetTag(CoreData.UpdatesAvailableNotificationTag.ToString())
-
-                            .AddText(CoreTools.Translate("An update was found!"))
-                            .AddText(CoreTools.Translate("{0} can be updated to version {1}",
-                                upgradablePackages[0].Name, upgradablePackages[0].NewVersion))
-                            .SetAttributionText(CoreTools.Translate("You have currently version {0} installed",
-                                upgradablePackages[0].Version))
-
-                            .AddArgument("action", NotificationArguments.ShowOnUpdatesTab)
-                            .AddButton(new AppNotificationButton(CoreTools.Translate("View on UniGetUI").Replace("'", "´"))
-                                .AddArgument("action", NotificationArguments.ShowOnUpdatesTab)
-                            )
-                            .AddButton(new AppNotificationButton(CoreTools.Translate("Update"))
-                                .AddArgument("action", NotificationArguments.UpdateAllPackages)
-                            );
-                        notification = builder.BuildNotification();
-                    }
-                }
-                else
-                {
-                    string attribution = "";
-                    foreach (IPackage package in upgradablePackages) attribution += package.Name + ", ";
-                    attribution = attribution.TrimEnd(' ').TrimEnd(',');
-
-                    if (EnableAutoUpdate)
-                    {
-
-                        AppNotificationBuilder builder = new AppNotificationBuilder()
-                            .SetScenario(AppNotificationScenario.Default)
-                            .SetTag(CoreData.UpdatesAvailableNotificationTag.ToString())
-
-                            .AddText(
-                                CoreTools.Translate("{0} packages are being updated", upgradablePackages.Count))
-                            .SetAttributionText(attribution)
-                            .AddText(CoreTools.Translate("Updates found!"))
-
-                            .AddArgument("action", NotificationArguments.ShowOnUpdatesTab);
-                        notification = builder.BuildNotification();
-                    }
-                    else
-                    {
-                        AppNotificationBuilder builder = new AppNotificationBuilder()
-                            .SetScenario(AppNotificationScenario.Default)
-                            .SetTag(CoreData.UpdatesAvailableNotificationTag.ToString())
-
-                            .AddText(CoreTools.Translate("Updates found!"))
-                            .AddText(CoreTools.Translate("{0} packages can be updated", upgradablePackages.Count))
-                            .SetAttributionText(attribution)
-
-                            .AddButton(new AppNotificationButton(CoreTools.Translate("Open UniGetUI").Replace("'", "´"))
-                                .AddArgument("action", NotificationArguments.ShowOnUpdatesTab)
-                            )
-                            .AddButton(new AppNotificationButton(CoreTools.Translate("Update all"))
-                                .AddArgument("action", NotificationArguments.UpdateAllPackages)
-                            )
-                            .AddArgument("action", NotificationArguments.ShowOnUpdatesTab);
-                        notification = builder.BuildNotification();
-                    }
-                }
-
-                notification.ExpiresOnReboot = true;
-                AppNotificationManager.Default.Show(notification);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex);
-            }
+            // pass
         }
 
         private void MenuInstall_Invoked(object sender, RoutedEventArgs e)

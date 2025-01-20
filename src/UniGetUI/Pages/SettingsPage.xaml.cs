@@ -4,6 +4,7 @@ using ExternalLibraries.Clipboard;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
 using Newtonsoft.Json;
 using UniGetUI.Core.Data;
 using UniGetUI.Core.Language;
@@ -12,6 +13,7 @@ using UniGetUI.Core.SettingsEngine;
 using UniGetUI.Core.Tools;
 using UniGetUI.Interface.Enums;
 using UniGetUI.Interface.Pages;
+using UniGetUI.Interface.Pages.LogPage;
 using UniGetUI.Interface.Widgets;
 using UniGetUI.PackageEngine;
 using UniGetUI.PackageEngine.Interfaces;
@@ -28,7 +30,9 @@ namespace UniGetUI.Interface
     /// <summary>
     /// An empty window that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class SettingsPage : IEnterLeaveListener
+
+    [Microsoft.UI.Xaml.Data.Bindable]
+    public sealed partial class SettingsPage
     {
         private readonly HyperlinkButton ResetBackupDirectory;
         private readonly HyperlinkButton OpenBackupDirectory;
@@ -374,7 +378,7 @@ namespace UniGetUI.Interface
                         };
                         managerLogs.Click += (_, _) =>
                         {
-                            MainApp.Instance.MainWindow.NavigationPage.OpenManagerLogs(Manager as IPackageManager);
+                            MainApp.Instance.MainWindow.NavigationPage.NavigateTo(PageType.ManagerLog, Manager);
                         };
 
                         Grid g = new()
@@ -796,12 +800,12 @@ namespace UniGetUI.Interface
                 InterfaceSettingsExpander.ShowRestartRequiredBanner();
         }
 
-        public void OnEnter()
+        protected override void OnNavigatedTo(NavigationEventArgs args)
         {
             LoadIconCacheSize();
         }
 
-        public void OnLeave()
+        protected override void OnNavigatedFrom(NavigationEventArgs args)
         {
             foreach (var item in MainLayout.Children)
             {

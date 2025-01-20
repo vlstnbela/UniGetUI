@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -14,6 +15,7 @@ using UniGetUI.PackageEngine.PackageClasses;
 using UniGetUI.PackageEngine.PackageLoader;
 using Windows.System;
 using Windows.UI.Core;
+using Microsoft.UI.Xaml.Navigation;
 using UniGetUI.Interface.Pages;
 using UniGetUI.Pages.DialogPages;
 
@@ -22,7 +24,8 @@ using UniGetUI.Pages.DialogPages;
 
 namespace UniGetUI.Interface
 {
-    public abstract partial class AbstractPackagesPage : IKeyboardShortcutListener, IEnterLeaveListener
+    [Microsoft.UI.Xaml.Data.Bindable]
+    public abstract partial class AbstractPackagesPage : IKeyboardShortcutListener, IDisposable
     {
 
         protected struct PackagesPageData
@@ -171,7 +174,7 @@ namespace UniGetUI.Interface
                 IsExpanded = false
             };
 
-            ReloadButton.Click += async (_, _) => await LoadPackages();
+            ReloadButton.Click += async (_, _) => await Loader.ReloadPackages();
 
             // Handle Find Button click on the Query Block
             FindButton.Click += (_, _) =>
@@ -306,6 +309,11 @@ namespace UniGetUI.Interface
 
             GenerateToolBar();
             PackageList.ContextFlyout = GenerateContextMenu();
+
+            foreach (var package in Loader.Packages)
+            {
+                AddPackageToSourcesList(package);
+            }
         }
 
         private void Loader_PackagesChanged(object? sender, EventArgs e)
@@ -1045,16 +1053,46 @@ namespace UniGetUI.Interface
             FilterPackages();
         }
 
-        public void OnEnter()
+        protected abstract void HandleNavigationArguments(object? args);
+
+        protected override void OnNavigatedTo(NavigationEventArgs e)
         {
-            Visibility = Visibility.Visible;
-            IsEnabled = true;
+            foreach (var package in Loader.Packages)
+            {
+                AddPackageToSourcesList(package);
+            }
+
+
+            Loader.StartedLoading += Loader_StartedLoading;
+            Loader.FinishedLoading += Loader_FinishedLoading;
+            Loader.PackagesChanged += Loader_PackagesChanged;
+
+            if (Loader.IsLoading)
+            {
+                Loader_StartedLoading(this, EventArgs.Empty);
+            }
+            else
+            {
+                Loader_FinishedLoading(this, EventArgs.Empty);
+            }
+
+            FilterPackages();
+            HandleNavigationArguments(e.Parameter);
         }
 
-        public void OnLeave()
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
-            Visibility = Visibility.Collapsed;
-            IsEnabled = false;
+            Loader.StartedLoading -= Loader_StartedLoading;
+            Loader.FinishedLoading -= Loader_FinishedLoading;
+            Loader.PackagesChanged -= Loader_PackagesChanged;
+        }
+
+        public void Dispose()
+        {
+            foreach (var wrapper in FilteredPackages)
+            {
+                wrapper.Dispose();
+            }
         }
     }
 }

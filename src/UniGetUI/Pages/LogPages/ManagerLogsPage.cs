@@ -5,29 +5,33 @@ using UniGetUI.Core.Tools;
 using UniGetUI.PackageEngine;
 using UniGetUI.PackageEngine.Interfaces;
 using UniGetUI.PackageEngine.ManagerClasses.Classes;
+using UniGetUI.PackageEngine.Managers.WingetManager;
 
 namespace UniGetUI.Interface.Pages.LogPage
 {
-    public class ManagerLogsPage : BaseLogPage
-    {
 
+    [Microsoft.UI.Xaml.Data.Bindable]
+    public partial class ManagerLogsPage : BaseLogPage
+    {
+        private IPackageManager Manager;
         public ManagerLogsPage() : base(true)
         {
+            Manager = PEInterface.WinGet;
 
         }
 
-        public void LoadForManager(IPackageManager manager)
+        public void LoadForManager()
         {
             bool IS_DARK = this.ActualTheme == ElementTheme.Dark;
             bool verbose = LogLevelCombo.SelectedValue?.ToString()?.Contains(CoreTools.Translate("Verbose")) ?? false;
 
-            if(!verbose) SelectLogLevelByName(manager.DisplayName);
+            if(!verbose) SelectLogLevelByName(Manager.DisplayName);
 
-            IManagerLogger TaskLogger = manager.TaskLogger;
+            IManagerLogger TaskLogger = Manager.TaskLogger;
             LogTextBox.Blocks.Clear();
             Paragraph versionParagraph = new();
-            versionParagraph.Inlines.Add(new Run { Text = $"Manager {manager.DisplayName} with version:\n" });
-            versionParagraph.Inlines.Add(new Run { Text = manager.Status.Version });
+            versionParagraph.Inlines.Add(new Run { Text = $"Manager {Manager.DisplayName} with version:\n" });
+            versionParagraph.Inlines.Add(new Run { Text = Manager.Status.Version });
             versionParagraph.Inlines.Add(new Run { Text = "\n\n——————————————————————————————————————————\n\n" });
             LogTextBox.Blocks.Add(versionParagraph);
 
@@ -59,11 +63,21 @@ namespace UniGetUI.Interface.Pages.LogPage
             {
                 if (LogLevelCombo.SelectedValue?.ToString()?.Contains(manager.DisplayName) ?? false)
                 {
-                    LoadForManager(manager);
+                    Manager = manager;
                     break;
                 }
+            }
 
-                if(isReload) MainScroller.ScrollToVerticalOffset(MainScroller.ScrollableHeight);
+            LoadForManager();
+            if(isReload) MainScroller.ScrollToVerticalOffset(MainScroller.ScrollableHeight);
+        }
+
+        protected override void HandleNavigationArguments(object? args)
+        {
+            if (args is IPackageManager manager)
+            {
+                Manager = manager;
+                LoadForManager();
             }
         }
 

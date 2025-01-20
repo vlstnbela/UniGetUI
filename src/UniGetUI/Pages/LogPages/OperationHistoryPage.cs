@@ -3,6 +3,7 @@ using UniGetUI.Core.SettingsEngine;
 
 namespace UniGetUI.Interface.Pages.LogPage
 {
+    [Microsoft.UI.Xaml.Data.Bindable]
     public class OperationHistoryPage : BaseLogPage
     {
         public OperationHistoryPage() : base(false)
@@ -26,6 +27,11 @@ namespace UniGetUI.Interface.Pages.LogPage
             LogTextBox.Blocks.Clear();
             LogTextBox.Blocks.Add(paragraph);
 
+        }
+
+        protected override void HandleNavigationArguments(object? args)
+        {
+            // pass
         }
 
         protected override void LoadLogLevels()

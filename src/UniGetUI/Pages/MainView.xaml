@@ -166,27 +166,21 @@
         <Grid Name="MainContentPresenterGrid" RowSpacing="0" Grid.Row="0" Grid.Column="1" Margin="0,0,8,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="0" />
-                <ColumnDefinition Width="0" />
-                <ColumnDefinition Width="0" />
-                <ColumnDefinition Width="0" />
-                <ColumnDefinition Width="0" />
-                <ColumnDefinition Width="0" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="16"/>
                 <RowDefinition Height="Auto" MaxHeight="200" MinHeight="0"/>
             </Grid.RowDefinitions>
-
+            <Frame Name="NavFrame" Grid.Column="0" Grid.Row="0" Padding="0" Margin="0"/>
             <controls:GridSplitter
-                Grid.Column="0" Grid.ColumnSpan="7" Grid.Row="1"
+                Grid.Column="0" Grid.Row="1"
                 Name="OperationSplitter"
                 Orientation="Horizontal"
                 CornerRadius="4" Height="12" Padding="0,0,0,0"
                 Margin="1,0,1,0"/>
             <Grid
-                Grid.Column="0" Grid.ColumnSpan="7" Grid.Row="1">
+                Grid.Column="0" Grid.Row="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -211,10 +205,8 @@
                 </HyperlinkButton>
             </Grid>
             <ListView
-                    SizeChanged="OperationScrollView_SizeChanged"
                     Grid.Column="0" Grid.ColumnSpan="7" Grid.Row="2"
                     Padding="0,0,0,0"
-
                     ItemTemplate="{StaticResource OperationTemplate}"
                     Margin="0,0,0,0" SelectionMode="None"
                     Name="OperationList" x:FieldModifier="public">

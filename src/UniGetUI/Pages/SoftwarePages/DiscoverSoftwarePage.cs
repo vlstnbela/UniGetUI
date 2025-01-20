@@ -13,7 +13,8 @@ using UniGetUI.Pages.DialogPages;
 
 namespace UniGetUI.Interface.SoftwarePages
 {
-    public class DiscoverSoftwarePage : AbstractPackagesPage
+    [Microsoft.UI.Xaml.Data.Bindable]
+    public partial class DiscoverSoftwarePage : AbstractPackagesPage
     {
         private BetterMenuItem? MenuAsAdmin;
         private BetterMenuItem? MenuInteractive;
@@ -208,7 +209,7 @@ namespace UniGetUI.Interface.SoftwarePages
 
             PackageDetails.Click += (_, _) => ShowDetailsForPackage(SelectedItem);
             ExportSelection.Click += ExportSelection_Click;
-            HelpButton.Click += (_, _) => MainApp.Instance.MainWindow.NavigationPage.ShowHelp();
+            HelpButton.Click += (_, _) => MainApp.Instance.MainWindow.NavigationPage.NavigateTo(PageType.Help);
             InstallationSettings.Click += (_, _) => ShowInstallationOptionsForPackage(SelectedItem);
 
             InstallSelected.Click += (_, _) => MainApp.Operations.Install(FilteredPackages.GetCheckedPackages());
@@ -225,6 +226,11 @@ namespace UniGetUI.Interface.SoftwarePages
             {
                 await LoadPackages(ReloadReason.External);
             }
+        }
+
+        protected override void HandleNavigationArguments(object? args)
+        {
+            // pass
         }
 
         private void Event_SearchPackages(object sender, RoutedEventArgs e)

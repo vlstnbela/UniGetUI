@@ -11,10 +11,10 @@
     HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
     NavigationCacheMode="Required">
 
-    <animations:Implicit.ShowAnimations>
+    <!--animations:Implicit.ShowAnimations>
         <animations:TranslationAnimation Duration="0:0:0.25" From="0,100,0" To="0"/>
         <animations:OpacityAnimation Duration="0:0:0.25" From="0" To="1"/>
-    </animations:Implicit.ShowAnimations>
+    </animations:Implicit.ShowAnimations-->
 
     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" RowSpacing="4">
         <Grid.ColumnDefinitions>

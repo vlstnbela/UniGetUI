@@ -5,6 +5,7 @@ using UniGetUI.Core.Tools;
 
 namespace UniGetUI.Interface.Pages.LogPage
 {
+    [Microsoft.UI.Xaml.Data.Bindable]
     public sealed class UniGetUILogPage : BaseLogPage
     {
         public UniGetUILogPage() : base(true)
@@ -82,6 +83,11 @@ namespace UniGetUI.Interface.Pages.LogPage
                 LogTextBox.Blocks.Add(p);
             }
             if (isReload) MainScroller.ScrollToVerticalOffset(MainScroller.ScrollableHeight);
+        }
+
+        protected override void HandleNavigationArguments(object? args)
+        {
+            // pass
         }
     }
 }

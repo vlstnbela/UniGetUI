@@ -6,6 +6,7 @@ using UniGetUI.Core.Tools;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.UI;
+using Microsoft.UI.Xaml.Navigation;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -15,12 +16,13 @@ namespace UniGetUI.Interface.Pages
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public abstract partial class BaseLogPage : IKeyboardShortcutListener, IEnterLeaveListener
+    public abstract partial class BaseLogPage : IKeyboardShortcutListener
     {
         protected int LOG_LEVEL = 4;
 
         protected abstract void LoadLogLevels();
         public abstract void LoadLog(bool isReload = false);
+        protected abstract void HandleNavigationArguments(object? args);
 
         public BaseLogPage(bool log_level_enabled)
         {
@@ -103,10 +105,13 @@ namespace UniGetUI.Interface.Pages
             LoadLog();
         }
 
-        public void OnEnter()
-            => LoadLog();
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            HandleNavigationArguments(e.Parameter);
+            LoadLog();
+        }
 
-        public void OnLeave()
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
             => LogTextBox.Blocks.Clear();
     }
 }
