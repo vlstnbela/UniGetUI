@@ -8,10 +8,10 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:animations="using:CommunityToolkit.WinUI.Animations" xmlns:widgets="using:UniGetUI.Interface.Widgets"
     mc:Ignorable="d">
 
-    <!--animations:Implicit.ShowAnimations>
+    <animations:Implicit.ShowAnimations>
         <animations:TranslationAnimation Duration="0:0:0.25" From="0,100,0" To="0"/>
         <animations:OpacityAnimation Duration="0:0:0.25" From="0" To="1"/>
-    </animations:Implicit.ShowAnimations-->
+    </animations:Implicit.ShowAnimations>
 
     <Grid RowSpacing="4">
         <Grid.RowDefinitions>

@@ -15,10 +15,6 @@ using UniGetUI.PackageEngine.Interfaces;
 using UniGetUI.Pages.DialogPages;
 using UniGetUI.PackageEngine.Operations;
 using CommunityToolkit.WinUI.Controls;
-using Microsoft.Windows.AppNotifications;
-using Microsoft.Windows.AppNotifications.Builder;
-using UniGetUI.Core.Logging;
-using UniGetUI.Interface.Enums;
 using UniGetUI.PackageEngine.Enums;
 using UniGetUI.PackageEngine;
 using UniGetUI.PackageOperations;
@@ -42,153 +38,43 @@ namespace UniGetUI.Interface
         Null // Used for initializers
     }
 
-    public sealed partial class MainView
+    public sealed partial class MainView : UserControl
     {
+        private DiscoverSoftwarePage DiscoverPage;
+        private SoftwareUpdatesPage UpdatesPage;
+        private InstalledPackagesPage InstalledPage;
+        private PackageBundlesPage BundlesPage;
+        private SettingsPage? SettingsPage;
+        private UniGetUILogPage? UniGetUILogPage;
+        private ManagerLogsPage? ManagerLogPage;
+        private OperationHistoryPage? OperationHistoryPage;
+        private HelpPage? HelpPage;
+
         private PageType OldPage_t = PageType.Null;
         private PageType CurrentPage_t = PageType.Null;
+        private Page CurrentPage = null!;
+        private readonly HashSet<Page> AddedPages = new();
 
         public MainView()
         {
             InitializeComponent();
             OperationList.ItemContainerTransitions = null;
             OperationList.ItemsSource = MainApp.Operations._operationList;
-
-            PEInterface.UpgradablePackagesLoader.PackagesChanged += (s, e) =>
+            DiscoverPage = new DiscoverSoftwarePage();
+            UpdatesPage = new SoftwareUpdatesPage
             {
-                MainApp.Dispatcher.TryEnqueue(() =>
-                {
-                    MainApp.Tooltip.AvailableUpdates = PEInterface.UpgradablePackagesLoader.Count();
-                    UpdatesBadge.Value = PEInterface.UpgradablePackagesLoader.Count();
-                    UpdatesBadge.Visibility = UpdatesBadge.Value > 0 ? Visibility.Visible : Visibility.Collapsed;
-                });
+                ExternalCountBadge = UpdatesBadge
             };
+            InstalledPage = new InstalledPackagesPage();
+            BundlesPage = new PackageBundlesPage();
 
-            PEInterface.UpgradablePackagesLoader.FinishedLoading += (s, e) =>
+            foreach (Page page in new Page[] { DiscoverPage, UpdatesPage, InstalledPage, BundlesPage })
             {
-                MainApp.Dispatcher.TryEnqueue(() =>
-                {
-
-                    List<IPackage> upgradablePackages = [];
-                    foreach (IPackage package in PEInterface.UpgradablePackagesLoader.Packages)
-                        if (package.Tag is not PackageTag.OnQueue and not PackageTag.BeingProcessed)
-                            upgradablePackages.Add(package);
-
-                    try
-                    {
-                        if (upgradablePackages.Count == 0)
-                            return;
-
-                        bool EnableAutoUpdate = Settings.Get("AutomaticallyUpdatePackages") ||
-                                                Environment.GetCommandLineArgs().Contains("--updateapps");
-
-                        if (EnableAutoUpdate)
-                        {
-                            foreach (IPackage package in PEInterface.UpgradablePackagesLoader.Packages)
-                                if (package.Tag is not PackageTag.BeingProcessed and not PackageTag.OnQueue)
-                                    MainApp.Operations.Update(package);
-                        }
-
-                        if (Settings.AreUpdatesNotificationsDisabled())
-                            return;
-
-                        AppNotificationManager.Default.RemoveByTagAsync(CoreData.UpdatesAvailableNotificationTag
-                            .ToString());
-
-
-                        AppNotification notification;
-                        if (upgradablePackages.Count == 1)
-                        {
-                            if (EnableAutoUpdate)
-                            {
-                                AppNotificationBuilder builder = new AppNotificationBuilder()
-                                    .SetScenario(AppNotificationScenario.Default)
-                                    .SetTag(CoreData.UpdatesAvailableNotificationTag.ToString())
-
-                                    .AddText(CoreTools.Translate("An update was found!"))
-                                    .AddText(CoreTools.Translate("{0} is being updated to version {1}",
-                                        upgradablePackages[0].Name, upgradablePackages[0].NewVersion))
-                                    .SetAttributionText(CoreTools.Translate("You have currently version {0} installed",
-                                        upgradablePackages[0].Version))
-
-                                    .AddArgument("action", NotificationArguments.ShowOnUpdatesTab);
-                                notification = builder.BuildNotification();
-                            }
-                            else
-                            {
-                                AppNotificationBuilder builder = new AppNotificationBuilder()
-                                    .SetScenario(AppNotificationScenario.Default)
-                                    .SetTag(CoreData.UpdatesAvailableNotificationTag.ToString())
-
-                                    .AddText(CoreTools.Translate("An update was found!"))
-                                    .AddText(CoreTools.Translate("{0} can be updated to version {1}",
-                                        upgradablePackages[0].Name, upgradablePackages[0].NewVersion))
-                                    .SetAttributionText(CoreTools.Translate("You have currently version {0} installed",
-                                        upgradablePackages[0].Version))
-
-                                    .AddArgument("action", NotificationArguments.ShowOnUpdatesTab)
-                                    .AddButton(new AppNotificationButton(CoreTools.Translate("View on UniGetUI")
-                                            .Replace("'", "´"))
-                                        .AddArgument("action", NotificationArguments.ShowOnUpdatesTab)
-                                    )
-                                    .AddButton(new AppNotificationButton(CoreTools.Translate("Update"))
-                                        .AddArgument("action", NotificationArguments.UpdateAllPackages)
-                                    );
-                                notification = builder.BuildNotification();
-                            }
-                        }
-                        else
-                        {
-                            string attribution = "";
-                            foreach (IPackage package in upgradablePackages) attribution += package.Name + ", ";
-                            attribution = attribution.TrimEnd(' ').TrimEnd(',');
-
-                            if (EnableAutoUpdate)
-                            {
-
-                                AppNotificationBuilder builder = new AppNotificationBuilder()
-                                    .SetScenario(AppNotificationScenario.Default)
-                                    .SetTag(CoreData.UpdatesAvailableNotificationTag.ToString())
-
-                                    .AddText(
-                                        CoreTools.Translate("{0} packages are being updated", upgradablePackages.Count))
-                                    .SetAttributionText(attribution)
-                                    .AddText(CoreTools.Translate("Updates found!"))
-
-                                    .AddArgument("action", NotificationArguments.ShowOnUpdatesTab);
-                                notification = builder.BuildNotification();
-                            }
-                            else
-                            {
-                                AppNotificationBuilder builder = new AppNotificationBuilder()
-                                    .SetScenario(AppNotificationScenario.Default)
-                                    .SetTag(CoreData.UpdatesAvailableNotificationTag.ToString())
-
-                                    .AddText(CoreTools.Translate("Updates found!"))
-                                    .AddText(CoreTools.Translate("{0} packages can be updated",
-                                        upgradablePackages.Count))
-                                    .SetAttributionText(attribution)
-
-                                    .AddButton(new AppNotificationButton(CoreTools.Translate("Open UniGetUI")
-                                            .Replace("'", "´"))
-                                        .AddArgument("action", NotificationArguments.ShowOnUpdatesTab)
-                                    )
-                                    .AddButton(new AppNotificationButton(CoreTools.Translate("Update all"))
-                                        .AddArgument("action", NotificationArguments.UpdateAllPackages)
-                                    )
-                                    .AddArgument("action", NotificationArguments.ShowOnUpdatesTab);
-                                notification = builder.BuildNotification();
-                            }
-                        }
-
-                        notification.ExpiresOnReboot = true;
-                        AppNotificationManager.Default.Show(notification);
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Error(ex);
-                    }
-                });
-            };
+                Grid.SetColumn(page, 0);
+                Grid.SetRow(page, 0);
+                MainContentPresenterGrid.Children.Add(page);
+                AddedPages.Add(page);
+            }
 
             MoreNavButtonMenu.Closed += (_, _) => SelectNavButtonForPage(CurrentPage_t);
             KeyUp += (s, e) =>
@@ -196,6 +82,7 @@ namespace UniGetUI.Interface
                 bool IS_CONTROL_PRESSED = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down);
                 bool IS_SHIFT_PRESSED = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down);
 
+                Page currentPage = GetPageForType(CurrentPage_t);
                 if (e.Key is VirtualKey.Tab && IS_CONTROL_PRESSED)
                 {
                     NavigateTo(IS_SHIFT_PRESSED ? GetPreviousPage(CurrentPage_t) : GetNextPage(CurrentPage_t));
@@ -210,15 +97,15 @@ namespace UniGetUI.Interface
                 }
                 else if (e.Key is VirtualKey.F5 || (e.Key is VirtualKey.R && IS_CONTROL_PRESSED))
                 {
-                    (NavFrame.Content as IKeyboardShortcutListener)?.ReloadTriggered();
+                    (currentPage as IKeyboardShortcutListener)?.ReloadTriggered();
                 }
                 else if (e.Key is VirtualKey.F && IS_CONTROL_PRESSED)
                 {
-                    (NavFrame.Content as IKeyboardShortcutListener)?.SearchTriggered();
+                    (currentPage as IKeyboardShortcutListener)?.SearchTriggered();
                 }
                 else if (e.Key is VirtualKey.A && IS_CONTROL_PRESSED)
                 {
-                    (NavFrame.Content as IKeyboardShortcutListener)?.SelectAllTriggered();
+                    (currentPage as IKeyboardShortcutListener)?.SelectAllTriggered();
                 }
             };
 
@@ -232,6 +119,12 @@ namespace UniGetUI.Interface
 
             UpdateOperationsLayout();
             MainApp.Operations._operationList.CollectionChanged += (_, _) => UpdateOperationsLayout();
+        }
+
+        public page_t RequestPageIntoView<page_t>(PageType page) where page_t: AbstractPackagesPage
+        {
+            NavigateTo(page);
+            return CurrentPage as page_t ?? throw new InvalidCastException("Invalid page_t");
         }
 
         public void LoadDefaultPage()
@@ -267,22 +160,21 @@ namespace UniGetUI.Interface
             MoreNavButtonMenu.ShowAt(MoreNavButton, new FlyoutShowOptions { ShowMode = FlyoutShowMode.Standard });
         }
 
-        private static Type GetClassTypeForType(PageType type)
+        private Page GetPageForType(PageType type)
             => type switch
             {
-                PageType.Discover => typeof(DiscoverSoftwarePage),
-                PageType.Updates => typeof(SoftwareUpdatesPage),
-                PageType.Installed => typeof(InstalledPackagesPage),
-                PageType.Bundles => typeof(PackageBundlesPage),
-                PageType.Settings => typeof(SettingsPage),
-                PageType.OwnLog => typeof(UniGetUILogPage),
-                PageType.ManagerLog => typeof(ManagerLogsPage),
-                PageType.OperationHistory => typeof(OperationHistoryPage),
-                PageType.Help => typeof(HelpPage),
+                PageType.Discover => DiscoverPage,
+                PageType.Updates => UpdatesPage,
+                PageType.Installed => InstalledPage,
+                PageType.Bundles => BundlesPage,
+                PageType.Settings => SettingsPage ??= new SettingsPage(),
+                PageType.OwnLog => UniGetUILogPage ??= new UniGetUILogPage(),
+                PageType.ManagerLog => ManagerLogPage ??= new ManagerLogsPage(),
+                PageType.OperationHistory => OperationHistoryPage ??= new OperationHistoryPage(),
+                PageType.Help => HelpPage ??= new HelpPage(),
                 PageType.Null => throw new InvalidCastException("Page type is Null"),
                 _ => throw new InvalidDataException($"Unknown page type {type}")
             };
-
 
         private static PageType GetNextPage(PageType type)
             => type switch
@@ -345,34 +237,22 @@ namespace UniGetUI.Interface
             SelectNavButtonForPage(CurrentPage_t);
         }
 
-        public void NavigateTo(PageType NewPage_t, object? arguments = null)
+        public void NavigateTo(PageType NewPage_t)
         {
             SelectNavButtonForPage(NewPage_t);
-            // if (CurrentPage_t == NewPage_t) return;
+            if (CurrentPage_t == NewPage_t) return;
 
-            //Page NewPage = GetPageForType(NewPage_t);
-            OldPage_t = NewPage_t;
-            Type NewType = GetClassTypeForType(NewPage_t);
+            Page NewPage = GetPageForType(NewPage_t);
 
-            //MainContentPresenterGrid.Children.Clear();
-            //if (!MainContentPresenterGrid.Children.Contains(NewPage))
-            //{
-                // if(NewPage_t != PageType.Installed) AddedPages.Add(NewPage);
-                //Grid.SetColumn(NewPage, 0);
-                //Grid.SetRow(NewPage, 0);
-                //MainContentPresenterGrid.Children.Add(NewPage);
-                try
-                {
-                    NavFrame.Navigate(NewType, arguments);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error($"Failed to navigate to page {NewPage_t}");
-                    Logger.Error(ex);
-                }
-            //}
+            if (!AddedPages.TryGetValue(NewPage, out _))
+            {
+                AddedPages.Add(NewPage);
+                Grid.SetColumn(NewPage, 0);
+                Grid.SetRow(NewPage, 0);
+                MainContentPresenterGrid.Children.Add(NewPage);
+            }
 
-            /*foreach (Page page in AddedPages)
+            foreach (Page page in AddedPages)
             {
                 bool IS_MAIN_PAGE = (page == NewPage);
                 page.Visibility =  IS_MAIN_PAGE? Visibility.Visible : Visibility.Collapsed;
@@ -386,11 +266,11 @@ namespace UniGetUI.Interface
             (NewPage as IEnterLeaveListener)?.OnEnter();
             if (OldPage_t is not PageType.Null)
             {
-                (CurrentPage as IEnterLeaveListener)?.OnLeave();
-                if(OldPage_t is PageType.Installed) (CurrentPage as IDisposable)?.Dispose();
+                Page oldPage = GetPageForType(OldPage_t);
+                (oldPage as IEnterLeaveListener)?.OnLeave();
             }
 
-            CurrentPage = NewPage;*/
+            CurrentPage = NewPage;
         }
 
         private void ReleaseNotesMenu_Click(object sender, RoutedEventArgs e)
@@ -400,21 +280,38 @@ namespace UniGetUI.Interface
             => NavigateTo(PageType.OperationHistory);
 
         private void ManagerLogsMenu_Click(object sender, RoutedEventArgs e)
-            => NavigateTo(PageType.ManagerLog);
+            => OpenManagerLogs();
+
+        public void OpenManagerLogs(IPackageManager? manager = null)
+        {
+            NavigateTo(PageType.ManagerLog);
+            if(manager is not null) ManagerLogPage?.LoadForManager(manager);
+        }
 
         public void UniGetUILogs_Click(object sender, RoutedEventArgs e)
             => NavigateTo(PageType.OwnLog);
 
         private void HelpMenu_Click(object sender, RoutedEventArgs e)
+            => ShowHelp();
+
+        public void ShowHelp()
             => NavigateTo(PageType.Help);
 
         private void QuitUniGetUI_Click(object sender, RoutedEventArgs e)
             => MainApp.Instance.DisposeAndQuit();
 
+
+        private bool ResizingOPLayout;
+        private int OpListChanges;
+
+
         bool isCollapsed;
 
         private void UpdateOperationsLayout()
         {
+            OpListChanges++;
+
+            ResizingOPLayout = true;
             int OpCount = MainApp.Operations._operationList.Count;
             int maxHeight = Math.Max((OpCount * 58) - 7, 0);
 
@@ -428,14 +325,19 @@ namespace UniGetUI.Interface
                     MainContentPresenterGrid.RowDefinitions[1].Height = new GridLength(16);
                     OperationSplitter.Visibility = Visibility.Visible;
                     OperationSplitterMenuButton.Visibility = Visibility.Visible;
+                    // OperationScrollView.Visibility = Visibility.Collapsed;
                     OperationSplitter.IsEnabled = false;
                 }
                 else
                 {
-                    MainContentPresenterGrid.RowDefinitions[2].Height = new GridLength(Math.Min(maxHeight, 200));
+                    //if (int.TryParse(Settings.GetValue("OperationHistoryPreferredHeight"), out int setHeight) && setHeight < maxHeight)
+                    //    MainContentPresenterGrid.RowDefinitions[2].Height = new GridLength(setHeight);
+                    //else
+                        MainContentPresenterGrid.RowDefinitions[2].Height = new GridLength(Math.Min(maxHeight, 200));
                     MainContentPresenterGrid.RowDefinitions[1].Height = new GridLength(16);
                     OperationSplitter.Visibility = Visibility.Visible;
                     OperationSplitterMenuButton.Visibility = Visibility.Visible;
+                    // OperationScrollView.Visibility = Visibility.Visible;
                     OperationSplitter.IsEnabled = true;
                 }
             }
@@ -445,7 +347,27 @@ namespace UniGetUI.Interface
                 MainContentPresenterGrid.RowDefinitions[2].Height = new GridLength(0);
                 OperationSplitter.Visibility = Visibility.Collapsed;
                 OperationSplitterMenuButton.Visibility = Visibility.Collapsed;
+                // OperationScrollView.Visibility = Visibility.Collapsed;
             }
+            ResizingOPLayout = false;
+        }
+
+        // int lastSaved = -1;
+        private async void OperationScrollView_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (ResizingOPLayout)
+                return;
+
+            if(OpListChanges > 0)
+            {
+                OpListChanges--;
+                return;
+            }
+
+            //lastSaved = (int)e.NewSize.Height;
+            //await Task.Delay(100);
+            //if ((int)e.NewSize.Height == lastSaved)
+            //    Settings.SetValue("OperationHistoryPreferredHeight", lastSaved.ToString());
         }
 
         private void OperationSplitterMenuButton_Click(object sender, RoutedEventArgs e)

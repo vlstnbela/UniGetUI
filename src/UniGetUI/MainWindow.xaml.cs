@@ -307,7 +307,7 @@ namespace UniGetUI.Interface
                 {
                     if (param == "--help")
                     {
-                        NavigationPage.NavigateTo(PageType.Help);
+                        NavigationPage.ShowHelp();
                     }
                     else if (new[]
                              {
@@ -334,7 +334,8 @@ namespace UniGetUI.Interface
                         // Handle potential JSON files
                         Logger.ImportantInfo("Begin attempt to open the package bundle " + param);
 
-                        NavigationPage.NavigateTo(PageType.Bundles, param);
+                        var page = NavigationPage.RequestPageIntoView<PackageBundlesPage>(PageType.Bundles);
+                        _ = page.OpenFromFile(param);
                     }
                     else if (param.EndsWith("UniGetUI.exe") || param.EndsWith("UniGetUI.dll"))
                     {

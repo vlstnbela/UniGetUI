@@ -16,8 +16,7 @@ using UniGetUI.Pages.DialogPages;
 
 namespace UniGetUI.Interface.SoftwarePages
 {
-    [Microsoft.UI.Xaml.Data.Bindable]
-    public partial class InstalledPackagesPage : AbstractPackagesPage
+    public class InstalledPackagesPage : AbstractPackagesPage
     {
         private bool HasDoneBackup;
 
@@ -175,11 +174,6 @@ namespace UniGetUI.Interface.SoftwarePages
             return menu;
         }
 
-        protected override void HandleNavigationArguments(object? args)
-        {
-            // pass
-        }
-
         public override void GenerateToolBar()
         {
             AppBarButton UninstallSelected = new();
@@ -260,7 +254,7 @@ namespace UniGetUI.Interface.SoftwarePages
             PackageDetails.Click += (_, _) => ShowDetailsForPackage(SelectedItem);
 
             ExportSelection.Click += ExportSelection_Click;
-            HelpButton.Click += (_, _) => MainApp.Instance.MainWindow.NavigationPage.NavigateTo(PageType.Help);
+            HelpButton.Click += (_, _) => MainApp.Instance.MainWindow.NavigationPage.ShowHelp();
             InstallationSettings.Click += (_, _) => ShowInstallationOptionsForPackage(SelectedItem);
             ManageIgnored.Click += async (_, _) => await DialogHelper.ManageIgnoredUpdates();
             IgnoreSelected.Click += async (_, _) =>

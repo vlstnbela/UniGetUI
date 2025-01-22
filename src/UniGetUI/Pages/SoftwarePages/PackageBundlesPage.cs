@@ -22,7 +22,6 @@ using YamlDotNet.Serialization;
 
 namespace UniGetUI.Interface.SoftwarePages
 {
-    [Microsoft.UI.Xaml.Data.Bindable]
     public partial class PackageBundlesPage : AbstractPackagesPage
     {
         private BetterMenuItem? MenuInstallOptions;
@@ -34,13 +33,15 @@ namespace UniGetUI.Interface.SoftwarePages
         private BetterMenuItem? MenuSkipHash;
         private BetterMenuItem? MenuDownloadInstaller;
 
-        private static bool HasUnsavedChanges
+        private bool _hasUnsavedChanges;
+        private bool HasUnsavedChanges
         {
-            get => PEInterface.PackageBundlesLoader._hasUnsavedChanges;
+            get => _hasUnsavedChanges;
             set
             {
-                MainApp.Instance.MainWindow.NavigationPage.BundlesBadge.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
-                PEInterface.PackageBundlesLoader._hasUnsavedChanges = value;
+                MainApp.Instance.MainWindow.NavigationPage.BundlesBadge.Visibility =
+                    value ? Visibility.Visible : Visibility.Collapsed;
+                _hasUnsavedChanges = value;
             }
         }
 
@@ -164,14 +165,6 @@ namespace UniGetUI.Interface.SoftwarePages
             return menu;
         }
 
-        protected override void HandleNavigationArguments(object? args)
-        {
-            if (args is string path && File.Exists(path))
-            {
-                _ = OpenFromFile(path);
-            }
-        }
-
         public override void GenerateToolBar()
         {
             AppBarButton OpenBundle = new();
@@ -251,7 +244,7 @@ namespace UniGetUI.Interface.SoftwarePages
                     DialogHelper.ShowPackageDetails(package, OperationType.None);
             };
 
-            HelpButton.Click += (_, _) => MainApp.Instance.MainWindow.NavigationPage.NavigateTo(PageType.Help);
+            HelpButton.Click += (_, _) => { MainApp.Instance.MainWindow.NavigationPage.ShowHelp(); };
 
             NewBundle.Click += (s, e) =>
             {
